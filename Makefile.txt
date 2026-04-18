@@ -1,0 +1,22 @@
+CXX = g++
+CXXFLAGS = -std=c++11 -Iinclude
+SRC_DIR = src
+OBJ_DIR = obj
+TARGET = main
+
+SRCS = $(SRC_DIR)/main.cpp $(SRC_DIR)/Matrix.cpp $(SRC_DIR)/Layer.cpp $(SRC_DIR)/NeuralNetwork.cpp $(SRC_DIR)/Activation.cpp $(SRC_DIR)/Loss.cpp
+OBJS = $(OBJ_DIR)/main.o $(OBJ_DIR)/Matrix.o $(OBJ_DIR)/Layer.o $(OBJ_DIR)/NeuralNetwork.o $(OBJ_DIR)/Activation.o $(OBJ_DIR)/Loss.o
+
+$(TARGET): $(OBJS)
+	$(CXX) $(OBJS) -o $(TARGET)
+
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp | $(OBJ_DIR)
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+$(OBJ_DIR):
+	mkdir -p $(OBJ_DIR)
+
+clean:
+	rm -rf $(OBJ_DIR) $(TARGET)
+
+.PHONY: clean
