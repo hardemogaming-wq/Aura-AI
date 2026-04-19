@@ -9,12 +9,15 @@
 #include "../include/PositionalEncoding.h"
 #include "../include/LayerNorm.h"
 #include "../include/FeedForward.h"
+#include "../include/AuraLM.h"
 #include <cmath>
 #include <fstream>
 #include <iostream>
 #include <iomanip>
 #include <stdexcept>
 #include <limits>
+#include <limits>
+#include <cstdlib>
 
 using namespace std;
 
@@ -53,6 +56,7 @@ static string diagnose_patient(const Matrix& output) {
 
 int main() {
     clear_terminal();
+    srand(42); // تثبيت العشوائية
     cout << "أهلاً بك في دكتور Aura-AI 🤖" << endl;
     cout << "نظام تشخيص بسيط يستخدم نموذجاً محفوظاً في model_weights.txt" << endl << endl;
 
@@ -104,33 +108,33 @@ int main() {
     }
 
     // اختبار Self-Attention
-    cout << "\n🧠 اختبار Self-Attention:" << endl;
-    SelfAttention attention;
+    // cout << "\n🧠 اختبار Self-Attention:" << endl;
+    // SelfAttention attention;
 
-    // إنشاء مصفوفات وهمية 3x3
-    Matrix Q(3, 3);
-    Matrix K(3, 3);
-    Matrix V(3, 3);
+    // // إنشاء مصفوفات وهمية 3x3
+    // Matrix Q(3, 3);
+    // Matrix K(3, 3);
+    // Matrix V(3, 3);
 
-    // ملء المصفوفات بقيم وهمية
-    for (int i = 0; i < 3; i++) {
-        for (int j = 0; j < 3; j++) {
-            Q.data[i][j] = i + j + 1.0;
-            K.data[i][j] = i - j + 1.0;
-            V.data[i][j] = i * j + 1.0;
-        }
-    }
+    // // ملء المصفوفات بقيم وهمية
+    // for (int i = 0; i < 3; i++) {
+    //     for (int j = 0; j < 3; j++) {
+    //         Q.data[i][j] = i + j + 1.0;
+    //         K.data[i][j] = i - j + 1.0;
+    //         V.data[i][j] = i * j + 1.0;
+    //     }
+    // }
 
-    cout << "Q (Query):" << endl;
-    Q.print();
-    cout << "K (Key):" << endl;
-    K.print();
-    cout << "V (Value):" << endl;
-    V.print();
+    // cout << "Q (Query):" << endl;
+    // Q.print();
+    // cout << "K (Key):" << endl;
+    // K.print();
+    // cout << "V (Value):" << endl;
+    // V.print();
 
-    Matrix attention_output = attention.compute_attention(Q, K, V);
-    cout << "نتيجة Self-Attention:" << endl;
-    attention_output.print();
+    // Matrix attention_output = attention.compute_attention(Q, K, V);
+    // cout << "نتيجة Self-Attention:" << endl;
+    // attention_output.print();
 
     // اختبار الـ Tokenizer
     cout << "\n🔠 اختبار الـ Tokenizer:" << endl;
@@ -186,12 +190,83 @@ int main() {
     cout << "المصفوفة بعد تطبيق Layer Normalization:" << endl;
     seq_embeddings.print();
 
-    // اختبار الـ Feed-Forward Network
-    cout << "\n⚙️ اختبار الـ Feed-Forward Network:" << endl;
-    FeedForward ffn(3, 12); // d_model=3, d_ff=12
-    Matrix ffn_output = ffn.forward(seq_embeddings);
-    cout << "المصفوفة بعد تطبيق Feed-Forward Network:" << endl;
-    ffn_output.print();
+    // اختبار الـ Transformer Block
+    cout << "\n🧩 اختبار الـ Transformer Block:" << endl;
+    TransformerBlock block(3, 12); // d_model=3, d_ff=12
+    Matrix block_output = block.forward(seq_embeddings);
+    cout << "المصفوفة بعد تطبيق Transformer Block:" << endl;
+    block_output.print();
+cout << "\n============================================\n";
+    cout << "💬 مرحباً بك في شات AuraLM (النسخة التجريبية)\n";
+    cout << "اكتب 'خروج' لإنهاء المحادثة.\n";
+    cout << "============================================\n";
+
+    // تدريب سريع للقاموس
+    AuraLM model(100, 3, 12); 
+
+    // محاولة استرجاع الذاكرة
+    bool is_loaded = model.load_model("AuraLM_brain.txt");
+
+    // 3. لو الذاكرة مش موجودة، نقرأ من قاعدة البيانات وندرب الموديل!
+    if (!is_loaded) {
+        cout << "⚙️ جاري تدريب الموديل لأول مرة على قاعدة البيانات...\n";
+        
+        ifstream file("dataset.txt");
+        if (!file.is_open()) {
+            cout << "❌ خطأ: لم يتم العثور على ملف dataset.txt\n";
+            return 1;
+        }
+
+        string line;
+        
+        // أ. تدريب القاموس (Tokenizer) على كل الملف
+        while (getline(file, line)) {
+            if (!line.empty()) {
+                model.tokenizer.train(line);
+            }
+        }
+        
+        // ب. نرجع مؤشر القراءة لأول الملف تاني
+        file.clear();
+        file.seekg(0);
+        
+        // ج. تدريب الموديل (Transformer) سطر بسطر
+        int count = 0;
+        while (getline(file, line)) {
+            if (!line.empty()) {
+                model.train_sentence(line, 200, 0.1);
+                count++;
+            }
+        }
+        
+        cout << "✅ تم التدريب على " << count << " جملة بنجاح!\n";
+        
+        // د. حفظ الذكاء الجديد
+        model.save_model("AuraLM_brain.txt");
+    }
+
+    // تنضيف البافر عشان getline يشتغل صح
+    cin.ignore(numeric_limits<streamsize>::max(), '\n');
+
+    string user_input;
+    while (true) {
+        cout << "\nأنت 👤: ";
+        getline(cin, user_input); // بنستخدم getline عشان نقرأ الجملة كلها اللي فيها مسافات
+
+        if (user_input == "خروج") {
+            cout << "AuraLM 🤖: وداعاً يا بشمهندس!\n";
+            break;
+        }
+
+        // تفادي الـ Enter الفاضي
+        if(user_input.empty()) continue;
+
+        // توليد الرد بناءً على كلام المستخدم
+        string response = model.generate_text(user_input, 4); // يكمل بـ 4 كلمات
+        
+        // طباعة الرد بعد مسح كلام اليوزر منه (عشان ميطبعش السؤال تاني)
+        cout << "AuraLM 🤖: " << response << endl;
+    }
 
     return 0;
 }

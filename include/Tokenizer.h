@@ -18,6 +18,12 @@ private:
 public:
     // دالة بتاخد جملة، وتقطعها، وتحفظ الكلمات الجديدة في القاموس
     void train(string text) {
+        // إضافة <unknown> كـ ID 0 إذا لم يكن موجود
+        if (word_to_id.find("<unknown>") == word_to_id.end()) {
+            word_to_id["<unknown>"] = 0;
+            id_to_word[0] = "<unknown>";
+        }
+        
         stringstream ss(text);
         string word;
         while (ss >> word) {
@@ -51,6 +57,8 @@ public:
         for (int id : ids) {
             if (id_to_word.find(id) != id_to_word.end()) {
                 text += id_to_word[id] + " ";
+            } else {
+                text += "<unknown> ";
             }
         }
         return text;

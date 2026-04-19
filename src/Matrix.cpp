@@ -182,18 +182,25 @@ void Matrix::print() const {
 // تحويل القيم لاحتمالات مجموعها 1
 Matrix Matrix::softmax() const {
     Matrix result(rows, cols);
-    double sum = 0.0;
     
-    // أولاً: نحسب الـ exp لكل رقم ونجمعهم
     for (int i = 0; i < rows; i++) {
+        // 1. إيجاد أكبر قيمة في الصف
+        double max_val = data[i][0];
+        for (int j = 1; j < cols; j++) {
+            if (data[i][j] > max_val) {
+                max_val = data[i][j];
+            }
+        }
+
+        // 2. حساب الـ exp بعد طرح القيمة العظمى
+        double sum = 0.0;
         for (int j = 0; j < cols; j++) {
-            result.data[i][j] = exp(data[i][j]);
+            // الطرح هنا بيحمينا من الـ Overflow
+            result.data[i][j] = exp(data[i][j] - max_val); 
             sum += result.data[i][j];
         }
-    }
-    
-    // ثانياً: نقسم كل رقم على المجموع الكلي
-    for (int i = 0; i < rows; i++) {
+
+        // 3. القسمة على المجموع
         for (int j = 0; j < cols; j++) {
             result.data[i][j] /= sum;
         }
