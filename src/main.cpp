@@ -201,36 +201,32 @@ cout << "\n============================================\n";
     cout << "اكتب 'خروج' لإنهاء المحادثة.\n";
     cout << "============================================\n";
 
-    // تدريب سريع للقاموس
-    AuraLM model(100, 3, 12); 
+    AuraLM model(100, 3, 12);
 
-    // محاولة استرجاع الذاكرة
-    bool is_loaded = model.load_model("AuraLM_brain.txt");
-
-    // 3. لو الذاكرة مش موجودة، نقرأ من قاعدة البيانات وندرب الموديل!
-    if (!is_loaded) {
-        cout << "⚙️ جاري تدريب الموديل لأول مرة على قاعدة البيانات...\n";
-        
-        ifstream file("dataset.txt");
-        if (!file.is_open()) {
-            cout << "❌ خطأ: لم يتم العثور على ملف dataset.txt\n";
-            return 1;
-        }
-
-        string line;
-        
-        // أ. تدريب القاموس (Tokenizer) على كل الملف
+    cout << "📚 جاري تجهيز القاموس اللغوي...\n";
+    ifstream file("dataset.txt");
+    string line;
+    
+    // 1. تدريب القاموس (Tokenizer) دايماً في كل مرة نفتح البرنامج
+    if (file.is_open()) {
         while (getline(file, line)) {
             if (!line.empty()) {
                 model.tokenizer.train(line);
             }
         }
-        
-        // ب. نرجع مؤشر القراءة لأول الملف تاني
+        // إرجاع مؤشر قراءة الملف للأول عشان لو هنحتاج ندرب الأوزان
         file.clear();
         file.seekg(0);
-        
-        // ج. تدريب الموديل (Transformer) سطر بسطر
+    } else {
+        cout << "❌ خطأ: لم يتم العثور على ملف dataset.txt\n";
+    }
+
+    // 2. محاولة استرجاع العقل (الأوزان)
+    bool is_loaded = model.load_model("AuraLM_brain.txt");
+
+    // 3. لو العقل مش موجود، نقرأ السطور تاني وندرب الموديل
+    if (!is_loaded && file.is_open()) {
+        cout << "⚙️ جاري تدريب الموديل لأول مرة على قاعدة البيانات...\n";
         int count = 0;
         while (getline(file, line)) {
             if (!line.empty()) {
@@ -238,10 +234,9 @@ cout << "\n============================================\n";
                 count++;
             }
         }
-        
         cout << "✅ تم التدريب على " << count << " جملة بنجاح!\n";
         
-        // د. حفظ الذكاء الجديد
+        // حفظ الذكاء الجديد
         model.save_model("AuraLM_brain.txt");
     }
 

@@ -62,12 +62,30 @@ public:
         // 6. الـ LM Head بيطلع احتمالات القاموس كله
         Matrix probabilities = lm_head->forward(last_word_context);
 
-        // 7. اختيار الكلمة صاحبة أعلى احتمال (Argmax)
+        // 7. اختيار الكلمة بذكاء (منع التكرار - Repetition Penalty)
         int best_word_id = 0;
-        double max_prob = probabilities.data[0][0];
+        double max_prob = -99999.0; // نبدأ برقم صغير جداً
+        
         for(int j = 1; j < vocab_size; j++) {
-            if(probabilities.data[0][j] > max_prob) {
-                max_prob = probabilities.data[0][j];
+            double current_prob = probabilities.data[0][j];
+            
+            // نحول الـ ID لكلمة عشان نفحصها
+            std::vector<int> check_token = {j};
+            std::string word_to_check = tokenizer.decode(check_token);
+            
+            // -- خوارزمية العقاب --
+            // 1. لو الكلمة فاضية أو مجهولة، نعاقبها
+            if (word_to_check == "" || word_to_check == " " || word_to_check == "<unknown>") {
+                current_prob -= 10.0; 
+            }
+            // 2. لو الكلمة اتكررت في السياق الحالي، نعاقبها عقاب خفيف عشان يحاول يجيب كلمة جديدة
+            else if (input_text.find(word_to_check) != std::string::npos) {
+                current_prob -= 2.0; 
+            }
+
+            // اختيار الكلمة صاحبة أعلى احتمال بعد العقاب
+            if(current_prob > max_prob) {
+                max_prob = current_prob;
                 best_word_id = j;
             }
         }
